@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CineLog — My Films</title>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Navbar ────────────────────────────────────── */
+    nav {
+      background: #0f0f1e;
+      border-bottom: 2px solid #00e054;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      height: 56px;
+    }
+    nav .brand {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #00e054;
+      letter-spacing: 2px;
+      text-decoration: none;
+    }
+    nav a {
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 0;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    nav a:hover, nav a.active { color: #00e054; border-bottom-color: #00e054; }
+
+    /* ── Layout ────────────────────────────────────── */
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 300;
+      color: #fff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Panel ─────────────────────────────────────── */
+    .panel {
+      background: #16213e;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .panel-title {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #00e054;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Filter bar ────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .filter-bar label {
+      font-size: 0.85rem;
+      color: #aaa;
+      letter-spacing: 1px;
+    }
+
+    /* ── Form grid ─────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.9rem;
+      align-items: end;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label {
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #888;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      background: #0f0f1e;
+      border: 1px solid #2a2a4a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      padding: 0.5rem 0.7rem;
+      font-size: 0.9rem;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #00e054;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+
+    /* ── Buttons ───────────────────────────────────── */
+    .btn {
+      display: inline-block;
+      padding: 0.5rem 1.2rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #00e054; color: #0f0f1e; }
+
+    /* ── HTMX loading indicator ────────────────────── */
+    .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+    .htmx-request .htmx-indicator { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="/movies">CINELOG</a>
+  <a href="/movies" class="active">Films</a>
+  <a href="/dashboard">Dashboard</a>
+</nav>
+
+<div class="page">
+  <h1>My Films</h1>
+
+  <!-- Filter -->
+  <div class="panel">
+    <div class="panel-title">Filter</div>
+    <div class="filter-bar">
+      <label for="genreFilter">Genre</label>
+      <select id="genreFilter"
+              name="genreId"
+              hx-get="/movies/fragment/list"
+              hx-target="#movie-list"
+              hx-trigger="change"
+              hx-include="[name='genreId']"
+              style="width:200px;">
+        <option value="">All Genres</option>
+        <option th:each="g : ${genres}" th:value="${g.id}" th:text="${g.name}"></option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Add Movie form -->
+  <div class="panel">
+    <div class="panel-title">Add Film</div>
+    <form hx-post="/movies"
+          hx-target="#movie-list"
+          hx-swap="outerHTML"
+          hx-indicator=".htmx-indicator">
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input id="title" type="text" name="title" placeholder="Film title" required/>
+        </div>
+
+        <div class="form-group">
+          <label for="genreId">Genre</label>
+          <select id="genreId" name="genreId" required>
+            <option value="">— pick genre —</option>
+            <option th:each="g : ${genres}" th:value="${g.id}" th:text="${g.name}"></option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select id="status" name="status" required>
+            <option value="want_to_watch">Want to Watch</option>
+            <option value="watching">Watching</option>
+            <option value="watched">Watched</option>
+            <option value="dropped">Dropped</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="rating">Rating (1–10)</label>
+          <input id="rating" type="number" name="rating" min="1" max="10" placeholder="optional"/>
+        </div>
+
+        <div class="form-group">
+          <label for="watchedAt">Watched Date</label>
+          <input id="watchedAt" type="date" name="watchedAt"/>
+        </div>
+
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-primary">Add Film</button>
+        </div>
+
+      </div>
+    </form>
+    <span class="htmx-indicator" style="font-size:0.8rem;color:#00e054;margin-top:0.5rem;display:block;">Saving…</span>
+  </div>
+
+  <!-- Movie list (initially server-rendered via fragment) -->
+  <div th:replace="~{fragments/movie :: movieList}"></div>
+
+</div>
+</body>
+</html>

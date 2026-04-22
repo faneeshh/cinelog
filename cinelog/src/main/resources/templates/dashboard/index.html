@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CineLog — Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Navbar ────────────────────────────────────── */
+    nav {
+      background: #0f0f1e;
+      border-bottom: 2px solid #00e054;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      height: 56px;
+    }
+    nav .brand {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #00e054;
+      letter-spacing: 2px;
+      text-decoration: none;
+    }
+    nav a {
+      color: #aaa;
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 0;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    nav a:hover { color: #00e054; border-bottom-color: #00e054; }
+    nav a.active { color: #00e054; border-bottom-color: #00e054; }
+
+    /* ── Layout ────────────────────────────────────── */
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 300;
+      color: #fff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .subtitle {
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      color: #555;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+
+    /* ── KPI cards ─────────────────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: #16213e;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 1.5rem 1.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .kpi-card.total::before  { background: #00e054; }
+    .kpi-card.watched::before  { background: #00e054; }
+    .kpi-card.want::before { background: #888; }
+
+    .kpi-label {
+      font-size: 0.68rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 0.6rem;
+    }
+    .kpi-value {
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .kpi-card.total  .kpi-value { color: #fff; }
+    .kpi-card.watched  .kpi-value { color: #00e054; }
+    .kpi-card.want .kpi-value { color: #aaa; }
+
+    /* ── Genre table ───────────────────────────────── */
+    .section-title {
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #00e054;
+      margin-bottom: 1rem;
+    }
+    .panel {
+      background: #16213e;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    thead tr {
+      background: #0f0f1e;
+      border-bottom: 2px solid #00e054;
+    }
+    thead th {
+      padding: 0.75rem 1.25rem;
+      text-align: left;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #00e054;
+      font-weight: 600;
+    }
+    tbody tr {
+      border-bottom: 1px solid #2a2a4a;
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #1f2f50; }
+    tbody td {
+      padding: 0.75rem 1.25rem;
+      color: #ccc;
+    }
+    tbody td:last-child {
+      color: #00e054;
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    /* ── Bar ───────────────────────────────────────── */
+    .bar-cell { width: 50%; }
+    .bar-track {
+      background: #0f0f1e;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      background: linear-gradient(90deg, #00e054, #00b340);
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .empty-state {
+      padding: 2.5rem;
+      text-align: center;
+      color: #444;
+      letter-spacing: 1px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="/movies">CINELOG</a>
+  <a href="/movies">Films</a>
+  <a href="/dashboard" class="active">Dashboard</a>
+</nav>
+
+<div class="page">
+
+  <h1>Dashboard</h1>
+  <p class="subtitle">Your viewing at a glance</p>
+
+  <!-- KPI cards -->
+  <div class="kpi-row">
+
+    <div class="kpi-card total">
+      <div class="kpi-label">Total Films</div>
+      <div class="kpi-value" th:text="${totalMovies}">0</div>
+    </div>
+
+    <div class="kpi-card watched">
+      <div class="kpi-label">Watched</div>
+      <div class="kpi-value" th:text="${watchedCount}">0</div>
+    </div>
+
+    <div class="kpi-card want">
+      <div class="kpi-label">Want to Watch</div>
+      <div class="kpi-value" th:text="${wantToWatchCount}">0</div>
+    </div>
+
+  </div>
+
+  <!-- Genre breakdown -->
+  <p class="section-title">Films by Genre</p>
+  <div class="panel">
+
+    <div class="empty-state"
+         th:if="${moviesPerGenre == null or moviesPerGenre.isEmpty()}">
+      No data yet.
+    </div>
+
+    <table th:unless="${moviesPerGenre == null or moviesPerGenre.isEmpty()}">
+      <thead>
+        <tr>
+          <th>Genre</th>
+          <th>Films</th>
+          <th class="bar-cell"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <!--
+          moviesPerGenre is List<Object[]>
+          index 0 = genre name (String)
+          index 1 = count (Long)
+        -->
+        <tr th:each="row : ${moviesPerGenre}">
+          <td th:text="${row[0]}">—</td>
+          <td th:text="${row[1]}">0</td>
+          <td class="bar-cell">
+            <div class="bar-track">
+              <div class="bar-fill"
+                   th:style="'width:' + (${totalMovies > 0} ? (${#numbers.formatDecimal(row[1] * 100.0 / totalMovies, 0, 0)}) : '0') + '%;'">
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+</body>
+</html>

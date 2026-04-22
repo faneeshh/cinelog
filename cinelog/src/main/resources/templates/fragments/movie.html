@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<style>
+.badge-watched  { background:#003d18; color:#00e054; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; text-transform:uppercase; border:1px solid #00e054; }
+.badge-watching { background:#3d3000; color:#ffd700; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; text-transform:uppercase; border:1px solid #ffd700; }
+.badge-dropped  { background:#3d0000; color:#ff4444; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; text-transform:uppercase; border:1px solid #ff4444; }
+.badge-want     { background:#2a2a2a; color:#aaa;    padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; text-transform:uppercase; border:1px solid #444; }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Fragment: movieList
+     Returned by: GET /movies/fragment/list, POST /movies,
+                  PUT /movies/{id}, DELETE /movies/{id}
+     ═══════════════════════════════════════════════════════════ -->
+<div id="movie-list" th:fragment="movieList"
+     style="background:#16213e;border:1px solid #2a2a4a;border-radius:8px;overflow:hidden;">
+
+  <div th:if="${movies == null or movies.isEmpty()}"
+       style="padding:2rem;text-align:center;color:#555;letter-spacing:1px;">
+    No films yet. Add one above.
+  </div>
+
+  <table th:unless="${movies == null or movies.isEmpty()}"
+         style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+    <thead>
+      <tr style="background:#0f0f1e;border-bottom:2px solid #00e054;">
+        <th style="padding:0.75rem 1rem;text-align:left;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#00e054;font-weight:600;">Title</th>
+        <th style="padding:0.75rem 1rem;text-align:left;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#00e054;font-weight:600;">Genre</th>
+        <th style="padding:0.75rem 1rem;text-align:left;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#00e054;font-weight:600;">Status</th>
+        <th style="padding:0.75rem 1rem;text-align:left;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#00e054;font-weight:600;">Rating</th>
+        <th style="padding:0.75rem 1rem;text-align:left;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#00e054;font-weight:600;">Watched</th>
+        <th style="padding:0.75rem 1rem;text-align:left;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#00e054;font-weight:600;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="m, i : ${movies}"
+          th:id="'row-' + ${m.id}"
+          th:style="${i.odd} ? 'background:#1a1a2e;border-bottom:1px solid #2a2a4a;' : 'background:#16213e;border-bottom:1px solid #2a2a4a;'">
+
+        <!-- Title -->
+        <td style="padding:0.75rem 1rem;color:#fff;font-weight:500;" th:text="${m.title}"></td>
+
+        <!-- Genre -->
+        <td style="padding:0.75rem 1rem;color:#aaa;" th:text="${m.genre?.name}"></td>
+
+        <!-- Status badge -->
+        <td style="padding:0.75rem 1rem;">
+          <span th:class="${m.status == 'watched'} ? 'badge-watched' : (${m.status == 'watching'} ? 'badge-watching' : (${m.status == 'dropped'} ? 'badge-dropped' : 'badge-want'))" th:text="${m.status}"></span>
+        </td>
+
+        <!-- Rating -->
+        <td style="padding:0.75rem 1rem;color:#aaa;">
+          <span th:if="${m.rating != null}" th:text="${m.rating} + ' / 10'" style="color:#00e054;font-weight:600;"></span>
+          <span th:unless="${m.rating != null}" style="color:#444;">—</span>
+        </td>
+
+        <!-- Watched date -->
+        <td style="padding:0.75rem 1rem;color:#aaa;">
+          <span th:if="${m.watchedAt != null}" th:text="${#temporals.format(m.watchedAt, 'dd MMM yyyy')}"></span>
+          <span th:unless="${m.watchedAt != null}" style="color:#444;">—</span>
+        </td>
+
+        <!-- Actions -->
+        <td style="padding:0.75rem 1rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+
+            <!-- Status update -->
+            <select th:id="'status-' + ${m.id}"
+                    name="status"
+                    th:value="${m.status}"
+                    style="background:#0f0f1e;border:1px solid #2a2a4a;border-radius:4px;color:#e0e0e0;padding:4px 6px;font-size:0.8rem;">
+              <option value="want_to_watch" th:selected="${m.status == 'want_to_watch'}">Want to Watch</option>
+              <option value="watching"      th:selected="${m.status == 'watching'}">Watching</option>
+              <option value="watched"       th:selected="${m.status == 'watched'}">Watched</option>
+              <option value="dropped"       th:selected="${m.status == 'dropped'}">Dropped</option>
+            </select>
+
+            <button type="button"
+                    th:hx-put="'/movies/' + ${m.id}"
+                    hx-target="#movie-list"
+                    hx-swap="outerHTML"
+                    th:hx-include="'#status-' + ${m.id}"
+                    style="background:#00e054;color:#0f0f1e;border:none;border-radius:4px;padding:4px 10px;font-size:0.78rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;">
+              Update
+            </button>
+
+            <!-- Delete -->
+            <button type="button"
+                    th:hx-delete="'/movies/' + ${m.id}"
+                    hx-target="#movie-list"
+                    hx-swap="outerHTML"
+                    hx-confirm="Delete this film?"
+                    style="background:transparent;color:#ff4444;border:1px solid #ff4444;border-radius:4px;padding:4px 10px;font-size:0.78rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;">
+              Delete
+            </button>
+
+          </div>
+        </td>
+
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     Fragment: formError
+     Returned on IllegalArgumentException from POST / PUT
+     ═══════════════════════════════════════════════════════════ -->
+<div id="form-error" th:fragment="formError"
+     style="background:#2d0a0a;border:1px solid #ff4444;border-radius:6px;padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:0.75rem;">
+  <span style="color:#ff4444;font-size:1.1rem;line-height:1;">&#9888;</span>
+  <div>
+    <p style="color:#ff4444;font-weight:700;font-size:0.8rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Error</p>
+    <p style="color:#ffaaaa;font-size:0.9rem;" th:text="${errorMessage}">Something went wrong.</p>
+  </div>
+</div>
+
+</body>
+</html>
